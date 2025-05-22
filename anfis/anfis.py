@@ -15,11 +15,49 @@ class ANFIS(nn.Module):
         self.n_mfs = n_mfs
         
         # Gaussian Membership Functions (antecedents)
+        self.initial_mu = None
+        self.initial_sigma = None
         self.mu = nn.Parameter(torch.randn(n_input, n_mfs))                # Means
         self.sigma = nn.Parameter(torch.abs(torch.randn(n_input, n_mfs)))  # Sigmas
         
         # Linear layer for the consequent part (Sugeno-type output)
         self.consequent = nn.Linear(n_input * n_mfs, 1, bias=True)
+        self.initial_weights = None
+        self.initial_bias = None
+
+        self.save_initial_params()
+
+    def save_initial_params(self):
+        self.initial_mu = self.mu.data.clone().numpy()
+        self.initial_sigma = self.sigma.data.clone().numpy()
+        self.initial_weights = self.consequent.weight.data.clone().numpy()
+        self.initial_bias = self.consequent.bias.data.clone().numpy()
+
+    def get_antecedent_params(self):
+        return {
+            'mu': self.mu.data.numpy(),
+            'sigma': self.sigma.data.numpy()
+        }
+    
+    def get_consequent_params(self):
+        return {
+            'weights': self.consequent.weight.data.numpy(),
+            'bias': self.consequent.bias.data.numpy()
+        }
+    
+    def print_parameters(self):
+        """Imprime parámetros de forma estructurada"""
+        print("\n=== Parámetros Antecedentes (Funciones de Membresía) ===")
+        for i in range(self.n_input):
+            print(f"\nVariable {i+1}:")
+            for j in range(self.n_mfs):
+                print(f"  MF {j+1}: μ = {self.mu[i,j].item():.10f}, σ = {self.sigma[i,j].item():.10f}")
+
+        print("\n=== Parámetros Consecuentes ===")
+        print("Pesos:")
+        print(self.consequent.weight.data.numpy())
+        print("\nBias:")
+        print(self.consequent.bias.data.numpy())
         
     def forward(self, x):
         """
